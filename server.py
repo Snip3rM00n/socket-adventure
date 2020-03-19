@@ -43,7 +43,7 @@ class Server(object):
     each room have a unique description.
     """
 
-    game_name = "Realms of Venture"
+    game_name = "Explore the Andromeda Timecraft (ATC) Serendipity"
 
     def __init__(self, port=50000):
         self.input_buffer = ""
@@ -78,10 +78,24 @@ class Server(object):
         :param room_number: int
         :return: str
         """
+        craft_plaque = str("\n\n\"ATC Serendipity (KTIME01)"
+                           "\n\n'The universe, in its infinite perfection, is "
+                           "merely an unlikely series of Serendipities.' - "
+                           "Stella Starchelle (The Mother of Interstellar "
+                           "Flight), 0 SFE (Space Faring Era)"
+                           "\n\nThis Timecraft is an Ekiya Glide Company 256 "
+                           "Glyde Gx 2350 Temporal Edition commissioned on "
+                           "03/17/32915 SFE by the AHC Department of Temporal Integrity:"
+                           "\n\nKima Amber Metoyo (Temporal Operative)"
+                           "\nAstra Jayne Matsume (Temporal Analyst)"
+                           "\nDelilah Quincy Matsuka (Temporal Developer)\"")
 
-        # TODO: YOUR CODE HERE
+        rooms = {0: "You are at the temporal developer console.  The curved glass screen displays the tmpOrl IDE and the code to fold the time craft through the fourth dimension (time).",
+                 1: "You are at the port side of the timecraft.  The only thing here is a small control panel for opening the glass windshield of the timecraft.  The controls are greyed out with the word 'Unauthorized' overlayed on them.",
+                 2: f"You are at the starbord side of the timecraft.  There is a plaque on the wall that reads: {craft_plaque}",
+                 3: "You are at the front of the timecraft.  The temporal operative and temporal analyst would sit here to guide the craft.  On the dashboard, the chronotonium temporal filament sparkles in a dazzling array of colors underneith a dome of glass."}
 
-        pass
+        return rooms.get(room_number)
 
     def greet(self):
         """
@@ -107,10 +121,12 @@ class Server(object):
          
         :return: None 
         """
+        msg = b""
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        while b'\n' not in msg:
+            msg += self.client_connection.recv(16)
+        
+        self.input_buffer = msg.decode().strip()
 
     def move(self, argument):
         """
@@ -122,7 +138,7 @@ class Server(object):
         * "south"
         * "east"
         * "west"
-        
+
         "Moves" the client into a new room by adjusting self.room to reflect the
         number of the room that the client has moved into.
         
@@ -132,10 +148,36 @@ class Server(object):
         :param argument: str
         :return: None
         """
+        argument = argument.lower()
+        room = None
 
-        # TODO: YOUR CODE HERE
+        if argument == "north" and self.room == 0:
+            self.room = 3
+        elif argument == "south" and self.room == 3:
+            self.room = 0
+        elif argument == "east" and self.room == 0:
+            self.room = 1
+        elif argument == "east" and self.room == 2:
+            self.room = 0
+        elif argument == "west" and self.room == 0:
+            self.room = 2
+        elif argument == "west" and self.room == 1:
+            self.room = 0
+        else:
+            room = f"Bad! You cannot move in that direction."
+        
+        room = self.room_description(self.room) if room is None else room
 
-        pass
+        # This should be impossible to encounter, however handle the case to
+        # prevent undesired crashing.
+        if not room:
+            room = str("You have some how entered an invalid state and the "
+                       "timeline is collapsing!  You feel an unnerving lurch "
+                       "as you are torn from the colapsing timeline and "
+                       "returned to a stable timeline.")
+            self.room = 0
+
+        self.output_buffer = room
 
     def say(self, argument):
         """
@@ -151,9 +193,7 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        self.output_buffer = f"You say, \"{argument}\""
 
     def quit(self, argument):
         """
@@ -167,9 +207,8 @@ class Server(object):
         :return: None
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        self.done = True
+        self.output_buffer = "Goodbye!"
 
     def route(self):
         """
@@ -182,10 +221,19 @@ class Server(object):
         
         :return: None
         """
+        command = self.input_buffer.split(' ')[0].lower()
+        action = " ".join(self.input_buffer.split(' ')[1:])
+        
+        functions = {"quit": self.quit,
+                     "say": self.say,
+                     "move": self.move}
 
-        # TODO: YOUR CODE HERE
+        function = functions.get(command)
 
-        pass
+        if function:
+            function(action)
+        else:
+            self.output_buffer = "Bad! You can either move, say, or quit."
 
     def push_output(self):
         """
@@ -197,9 +245,10 @@ class Server(object):
         :return: None 
         """
 
-        # TODO: YOUR CODE HERE
-
-        pass
+        if self.output_buffer.startswith("Bad!"):
+            self.client_connection.sendall(f"{self.output_buffer} \n".encode())
+        else:
+            self.client_connection.sendall(f"OK! {self.output_buffer} \n".encode())
 
     def serve(self):
         self.connect()
