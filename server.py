@@ -72,10 +72,6 @@ class Server(object):
         For any room_number in 0, 1, 2, 3, return a string that "describes" that
         room.
 
-                                     3                      N
-                                     |                      ^
-                                 1 - 0 - 2                  |
-
         Ex: `self.room_number(1)` yields "Brown wallpaper covers the walls, bathing
         the room in warm light reflected from the half-drawn curtains."
 
@@ -166,7 +162,7 @@ class Server(object):
         elif argument == "west" and self.room == 0:
             self.room = 2
         elif argument == "west" and self.room == 1:
-                self.room = 0
+            self.room = 0
         else:
             room = f"Bad! You cannot move in that direction."
         
